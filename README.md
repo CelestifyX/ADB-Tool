@@ -21,7 +21,7 @@ ADB-Tool: Python-based utility for managing Android devices using ADB on Unix-li
 
 ## Usage
 
-- Run adb-tool to manage your Android device.
+- Run `adb-tool` to manage your Android device.
 
 ## Screenshots
 
