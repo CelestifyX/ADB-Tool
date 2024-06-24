@@ -1,0 +1,115 @@
+#!/usr/bin/env python
+
+import subprocess
+
+def check_device_connection():
+    result = subprocess.run(['adb', 'devices'], capture_output=True, text=True)
+    lines  = result.stdout.splitlines()
+
+    if len(lines) > 1 and "device" in lines[1]:
+        return True
+
+    return False
+
+def delete_package(package):
+    if not check_device_connection():
+        print("Device is not connected.")
+        return
+
+    result = subprocess.run(['adb', 'shell', 'pm', 'uninstall', '-k', '--user', '0', package], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    if not result.returncode == 0:
+        print(f"Failed to remove package {package}.")
+        return
+
+    print(f"Package {package} has been removed.")
+
+def list_packages():
+    if not check_device_connection():
+        print("Device is not connected.")
+        return
+
+    result = subprocess.run(['adb', 'shell', 'pm', 'list', 'packages'], capture_output=True, text=True)
+    if result.returncode != 0:
+        print("Failed to list packages.")
+        return []
+
+    packages = result.stdout.splitlines()
+    return packages
+
+def package_exists(package_name):
+    packages = list_packages()
+    return any(package_name in pkg for pkg in packages)
+
+def run_command(cmd):
+    if not check_device_connection():
+        print("Device is not connected.")
+        return
+
+    result = subprocess.run(['adb', 'shell', cmd], text=True)
+
+def show_device():
+    if not check_device_connection():
+        print("Device is not connected.")
+        return
+
+    result = subprocess.run(['adb', 'devices'], capture_output=True, text=True)
+    print(result.stdout)
+
+def show_help():
+    help_text = """
+Available commands:
+  help           - show this message
+  device         - list of devices
+  packages       - show a list of installed packages
+  delete <pkg>   - delete the specified package
+  command <cmd>  - execute the specified command in adb shell
+  clear          - clear the terminal screen
+  exit           - exit
+"""
+    print(help_text)
+
+def main():
+    try:
+        while True:
+            input_cmd = input("\nEnter the command (or 'help' for a list of commands):\n> ")
+
+            parts     = input_cmd.split(maxsplit=1)
+            cmd       = parts[0]
+            arg       = parts[1] if len(parts) > 1 else None
+
+            if cmd == 'help':
+                show_help()
+            elif cmd == 'device':
+                show_device()
+            elif cmd == 'packages':
+                for pkg in list_packages():
+                    print(pkg)
+            elif cmd == 'delete':
+                if not arg:
+                    print("Please provide the package name!")
+                    continue
+
+                if not package_exists(arg):
+                    print(f"Package {arg} not found")
+                    continue
+
+                delete_package(arg)
+            elif cmd == 'command':
+                if not arg:
+                    print("Please enter a command!")
+                    continue
+
+                run_command(arg)
+            elif cmd == 'clear':
+                subprocess.run(['clear'])
+            elif cmd == 'exit':
+                print("\nShutdown...")
+                break
+            else:
+                print(f"Unknown command: {cmd}. Type 'help' for a list of commands.")
+    except KeyboardInterrupt:
+        print("\n\nShutdown...")
+
+if __name__ == '__main__':
+    main()
